@@ -63,7 +63,7 @@ TREK never modifies or deletes anything in Immich, so no `update`, `delete`, or 
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| Server URL | Yes | The address of DSM itself, without a path, e.g. `https://your-nas:5001`. Do **not** add the Photos app path or alias (see [The server URL](#the-server-url)) |
+| Server URL | Yes | The address of DSM, e.g. `https://your-nas:5001`. TREK adds `/webapi/entry.cgi` to it itself (see [The server URL](#the-server-url)) |
 | Username | Yes | Synology account username |
 | Password | Yes | Stored encrypted; leave blank to keep the existing password |
 | MFA code (if enabled) | No | One-time password for 2FA; only needed on first connection or when re-authenticating |
@@ -82,8 +82,8 @@ Synology Photos doesn't use API keys — TREK signs in with a regular DSM user a
 
 #### The server URL
 
-- Enter the address of **DSM** (or of a reverse proxy that forwards DSM), with the port if it is not the default, for example `https://nas.example.com:5001`. **Leave out any path**, in particular the address or alias of the Photos app such as `/photo` or a custom alias: TREK signs in through DSM's general API at `<URL>/webapi/entry.cgi`, which the Photos app's own address does not serve. Check the address in a browser: `<URL>/webapi/query.cgi?api=SYNO.API.Info&version=1&method=query&query=SYNO.API.Auth` must answer with text that contains `"success":true`.
-- DSM's own port is shown under **Control Panel → Login Portal → DSM** (HTTPS port). A port or alias set for the Photos app under **Login Portal → Applications** is not the one to use.
+- Enter the address of **DSM** (or of a reverse proxy that forwards DSM), with the port if it is not the default, for example `https://nas.example.com:5001`. TREK signs in through DSM's general API at `<URL>/webapi/entry.cgi`, so the address has to answer there. The plain DSM address does; an address with a path, such as an alias set up for the Photos app, also works on some setups. If the connection test fails, try the plain DSM address first. You can check an address in a browser: `<URL>/webapi/query.cgi?api=SYNO.API.Info&version=1&method=query&query=SYNO.API.Auth` must answer with text that contains `"success":true`.
+- DSM's own port is shown under **Control Panel → Login Portal → DSM** (HTTPS port).
 - A URL without `http://` or `https://` is treated as `https://`, and a trailing `/` is ignored.
 - A NAS on a local or private address needs `ALLOW_INTERNAL_NETWORK=true` on the TREK server; otherwise the connection test fails with an address-not-allowed message. A loopback address such as `localhost` is never reached. See [Internal-Network-Access](Internal-Network-Access).
 - **Skip SSL certificate verification** is needed when DSM presents its self-signed certificate. As with Immich, only the certificate check is skipped, so prefer a trusted certificate (for example through DSM's Let's Encrypt support or a reverse proxy) where you can.
@@ -117,7 +117,7 @@ For Synology, a successful test stores a session token so the OTP code is not re
 
 | Message | What it usually means |
 |---------|-----------------------|
-| *Synology API request failed with status 405* (or *Method not allowed*) | The address does not point at DSM's API. Most often the Server URL ends in the Photos app's path or alias (for example `/photo`), or uses the Photos app's own port. Enter only the DSM address, such as `https://nas.example.com:5001`. A reverse proxy that does not pass POST requests to `/webapi/`, or `http://` on an HTTPS port (the redirect turns the POST into a GET), cause the same message. |
+| *Synology API request failed with status 405* (or *Method not allowed*) | An HTTP 405 means the server or proxy that answered does not accept that request method. When it appears while connecting Synology Photos, check which step shows it: the **Test connection** call goes to your NAS, while **Save** and loading albums go to TREK itself, so a reverse proxy in front of TREK that blocks some methods (for example `PUT`) can cause it. If it comes from the NAS side, a reverse proxy that does not pass `POST` requests to `/webapi/`, or `http://` on an HTTPS port (the redirect turns the POST into a GET), are possible causes. |
 | *Failed to connect to Synology API* | Wrong URL or port, the NAS is off or unreachable from the TREK server, or the certificate is rejected. Try the **Skip SSL certificate verification** switch for a self-signed certificate. |
 | An address-not-allowed message | The NAS is on a private address and `ALLOW_INTERNAL_NETWORK` is off, or the address is loopback. See [Internal-Network-Access](Internal-Network-Access). |
 | *Invalid credentials.* (400) | Wrong username or password. |
