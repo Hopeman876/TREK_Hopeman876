@@ -103,6 +103,15 @@ Synology Photos doesn't use API keys — TREK signs in with a regular DSM user a
 - Photos are searched by date (the day of an entry, the trip period or a date range); the result shows thumbnails and previews that TREK streams through its own server.
 - Capture time and GPS position of a photo come from Synology itself. Photos that were attached while TREK read them from the neighbouring item (issue #3019) are checked once against Synology at the first start after that fix, so journey order and map pins come out right; a photo Synology cannot confirm keeps what it had. This runs in the background and needs no action.
 
+#### Personal Space only: the Shared Space is not supported
+
+Synology Photos keeps photos in two separate places: your **Personal Space** and the **Shared Space** that all users of the NAS can see. DSM reaches them through two separate APIs (`SYNO.Foto.*` and `SYNO.FotoTeam.*`), and **TREK currently uses only the Personal Space API**. For photos that live in the Shared Space this shows up as:
+
+- albums are listed, with their photo count, but the thumbnails stay black, and opening one answers *404*;
+- **All Photos**, **This day**, **Trip Period** and **Date Range** find nothing, because the search covers only the Personal Space.
+
+Until the Shared Space is supported, copy the photos you want to use in TREK into the Personal Space of the DSM account TREK signs in with.
+
 ---
 
 ## Testing the connection
@@ -127,6 +136,8 @@ For Synology, a successful test stores a session token so the OTP code is not re
 | *Two-factor authentication is enforced for this account.* (406) | The account has to use two-factor on DSM's side; enter a code. |
 | *Maximum login attempts reached.* (407) / *Multiple logins blocked from this IP.* (107) | DSM has blocked the TREK server's address. Unblock it in DSM and wait a moment. |
 | *Password expired.* (408, 409) / *Password must be changed before login.* (410) | Change the password in DSM, then enter it in TREK again. |
+| Thumbnails stay black; opening one shows a Synology error page and the TREK log shows `GET …/synologyphotos/assets/… 404` | DSM does not find the photo where TREK asks for it. Most often the photo lives in the **Shared Space**, which TREK does not support yet; see [Personal Space only](#personal-space-only-the-shared-space-is-not-supported). |
+| **All Photos** (or a date search) finds nothing although the library has photos | The photos are in the **Shared Space**; see above. |
 | *Insufficient privilege.* (105) | The account may not use the **Synology Photos** package. Allow it under **Control Panel → User & Group**. |
 
 Passwords and sessions are encrypted with the server's encryption key; see [Encryption-Key-Rotation](Encryption-Key-Rotation) if you rotate it.
