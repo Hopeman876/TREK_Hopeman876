@@ -80,6 +80,27 @@ Synology Photos doesn't use API keys — TREK signs in with a regular DSM user a
 - 2FA is supported — enter the OTP at first connection; TREK stores the resulting device token so you won't be re-prompted on subsequent saves.
 - Read-only access is enough — TREK only lists albums, lists items, runs searches, and fetches thumbnails. It never writes, uploads, or deletes.
 
+#### The server URL
+
+- Enter the address of DSM or of your reverse proxy, with the port if it is not the default, for example `https://nas.example.com:5001`. A URL without `http://` or `https://` is treated as `https://`, and a trailing `/` is ignored.
+- A NAS on a local or private address needs `ALLOW_INTERNAL_NETWORK=true` on the TREK server; otherwise the connection test fails with an address-not-allowed message. A loopback address such as `localhost` is never reached. See [Internal-Network-Access](Internal-Network-Access).
+- **Skip SSL certificate verification** is needed when DSM presents its self-signed certificate. As with Immich, only the certificate check is skipped, so prefer a trusted certificate (for example through DSM's Let's Encrypt support or a reverse proxy) where you can.
+
+#### Sign-in, sessions and two-factor authentication
+
+- TREK signs in to DSM with the username and password, keeps the resulting session ID encrypted, and renews it on its own when DSM reports it as expired (DSM codes 106, 107 and 119). You do not have to sign in again after a DSM restart.
+- With **two-factor authentication**, enter the code in **MFA code** and press **Test connection**. DSM hands TREK a trusted-device token (shown in DSM as the device **trek**), which TREK stores encrypted. Later sessions are renewed with that token, so no new code is needed.
+- **Saving without a password** keeps the stored one. Saving is refused with *No stored password found* when nothing is stored yet.
+- **Changing the server URL or the username** ends the stored session, so you have to test the connection again (with a new MFA code if the account uses two-factor). TREK tells you with the in-app notification **Synology Photos disconnected**; it can be switched off under **Settings → Notifications** as *Synology session cleared*. Saving unchanged account details does not end the session.
+- DSM blocks an IP address after repeated failed sign-ins. If TREK reports *Multiple logins blocked from this IP* or *Maximum login attempts reached*, check the block list under **Control Panel → Security → Protection** and allow the TREK server's address.
+
+#### Albums, shared albums and search
+
+- The album list combines your **personal albums**, **albums you have shared** and **albums shared with you**. If one of the three cannot be loaded, TREK still shows the other two.
+- For a shared album TREK uses the album's sharing passphrase, so you can attach photos from an album that another DSM user shared with you. The photos still count as yours when you add them: an entry keeps only a reference, and the photo is loaded through the library of the person who added it.
+- Photos are searched by date (the day of an entry, the trip period or a date range); the result shows thumbnails and previews that TREK streams through its own server.
+- Capture time and GPS position of a photo come from Synology itself. Photos that were attached while TREK read them from the neighbouring item (issue #3019) are checked once against Synology at the first start after that fix, so journey order and map pins come out right; a photo Synology cannot confirm keeps what it had. This runs in the background and needs no action.
+
 ---
 
 ## Testing the connection
@@ -87,6 +108,25 @@ Synology Photos doesn't use API keys — TREK signs in with a regular DSM user a
 Each provider card has a **Test connection** button next to **Save**. Clicking it sends your current field values to the server and attempts to authenticate with the provider. The card's badge then reads **Connected** (otherwise **Not connected**); any error message from the provider is shown if it fails.
 
 For Synology, a successful test stores a session token so the OTP code is not required again on subsequent saves (as long as the URL and username remain the same).
+
+---
+
+## Troubleshooting Synology Photos
+
+| Message | What it usually means |
+|---------|-----------------------|
+| *Failed to connect to Synology API* | Wrong URL or port, the NAS is off or unreachable from the TREK server, or the certificate is rejected. Try the **Skip SSL certificate verification** switch for a self-signed certificate. |
+| An address-not-allowed message | The NAS is on a private address and `ALLOW_INTERNAL_NETWORK` is off, or the address is loopback. See [Internal-Network-Access](Internal-Network-Access). |
+| *Invalid credentials.* (400) | Wrong username or password. |
+| *Session expired or account disabled.* (401) / *No permission to use this account.* (402) | The DSM account is disabled or not allowed to sign in. |
+| *Two-factor authentication code required.* (403) | Enter the current code in **MFA code** and test again. |
+| *Two-factor authentication failed.* (404) | The code was wrong or expired; use the next one. |
+| *Two-factor authentication is enforced for this account.* (406) | The account has to use two-factor on DSM's side; enter a code. |
+| *Maximum login attempts reached.* (407) / *Multiple logins blocked from this IP.* (107) | DSM has blocked the TREK server's address. Unblock it in DSM and wait a moment. |
+| *Password expired.* (408, 409) / *Password must be changed before login.* (410) | Change the password in DSM, then enter it in TREK again. |
+| *Insufficient privilege.* (105) | The account may not use the **Synology Photos** package. Allow it under **Control Panel → User & Group**. |
+
+Passwords and sessions are encrypted with the server's encryption key; see [Encryption-Key-Rotation](Encryption-Key-Rotation) if you rotate it.
 
 ---
 
